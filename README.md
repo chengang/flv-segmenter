@@ -1,11 +1,6 @@
-=head1
 flv_segmenter
-=cut
+=============
 
-=head2
-flv.pl - dump Adobe flv file information per frame
-=cut
+* `flv.pl` -- Dump Adobe flv file information per frame
 
-=head2
-flv_segmenter.pl - split adobe flv file into segments at keyframes
-=cut
+* `flv_segmenter.pl` -- Split adobe flv file into segments at keyframes
