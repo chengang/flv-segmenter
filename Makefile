@@ -1,4 +1,4 @@
 all:
-	gcc flv.c -o flv_analyze
+	gcc flv.c -o flv
 clean:
-	rm -rf flv_analyze
+	rm -rf flv

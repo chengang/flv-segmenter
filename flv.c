@@ -31,133 +31,120 @@
 #define FLV_UI8(x) (unsigned int)(*(x))
 #define FLV_TIMESTAMP(x) (int)(((*(x + 3)) << 24) + ((*(x)) << 16) + ((*(x + 1)) << 8) + (*(x + 2)))
 
-typedef struct
-{
-	off_t offset;
-	unsigned int tagtype;
-	int datasize;
-	int timestamp;
-	short keyframe;
-	int tagsize;
+typedef struct {
+    unsigned int tagType;
+    int dataSize;
+    int timeStamp;
+    short keyframe;
+    int tagSize;
 } FLVTag_t;
 
-int readFLVTag (FLVTag_t * flvTag, int *tagID, FILE * fp)
+int readFLVTag(FLVTag_t * flvTag, int *tagID, FILE * fp)
 {
 	int rv;
 	unsigned char buf[FLV_SIZE_TAGHEADER];
 	unsigned char flags;
 
 	(*tagID)++;
-	rv = fread (buf, FLV_SIZE_TAGHEADER, 1, fp);
-	if (rv < 1)
-	{
+	rv = fread(buf, FLV_SIZE_TAGHEADER, 1, fp);
+	if (rv < 1) {
 		return READ_ERROR;
 	}
-	flvTag->tagtype = FLV_UI8 (buf);
-	flvTag->datasize = FLV_UI24 (&buf[1]);
-	flvTag->timestamp = FLV_TIMESTAMP (&buf[4]);
-	flvTag->tagsize = FLV_SIZE_TAGHEADER + flvTag->datasize;
+	flvTag->tagType = FLV_UI8(buf);
+	flvTag->dataSize = FLV_UI24(&buf[1]);
+	flvTag->timeStamp = FLV_TIMESTAMP(&buf[4]);
+	flvTag->tagSize = FLV_SIZE_TAGHEADER + flvTag->dataSize;
 
-	PRT ("TagID: %d\t", *tagID);
-	PRT ("TagType: %d\t", flvTag->tagtype);
-	PRT ("DataSize: %d\t", flvTag->datasize);
-	PRT ("TimeStamp: %d\t", flvTag->timestamp);
-	PRT ("TagSize: %d\t", flvTag->tagsize);
+	PRT("TagID: %d\t", *tagID);
+	PRT("TagType: %d\t", flvTag->tagType);
+	PRT("DataSize: %d\t", flvTag->dataSize);
+	PRT("TimeStamp: %d\t", flvTag->timeStamp);
+	PRT("TagSize: %d\t", flvTag->tagSize);
 
 	int if_avc = 0;
 
-	fread (&flags, 1, 1, fp);
-	if (flvTag->tagtype == FLV_TAG_AUDIO)
-	{
-		int codecid, samplerate, samplesize, stereo;
+	fread(&flags, 1, 1, fp);
+	if (flvTag->tagType == FLV_TAG_AUDIO) {
+		int codecId, sampleRate, sampleSize, stereo;
 
-		codecid = (flags >> 4) & 0xf;
-		samplerate = (flags >> 2) & 0x3;
-		samplesize = (flags >> 1) & 0x1;
+		codecId = (flags >> 4) & 0xf;
+		sampleRate = (flags >> 2) & 0x3;
+		sampleSize = (flags >> 1) & 0x1;
 		stereo = flags & 0x1;
 
-		PRT ("audio\t");
-		PRT ("codecId: %d\t", codecid);
-		PRT ("sampleRate: %d\t", samplerate);
-		PRT ("sampleSize: %d\t", samplesize);
+		PRT("audio\t");
+		PRT("codecId: %d\t", codecId);
+		PRT("sampleRate: %d\t", sampleRate);
+		PRT("sampleSize: %d\t", sampleSize);
 		//PRT ("stereo: %d\t", stereo);
-	}
-	else if (flvTag->tagtype == FLV_TAG_VIDEO)
-	{
-		int frameType, codecid;
+	} else if (flvTag->tagType == FLV_TAG_VIDEO) {
+		int frameType, codecId;
 
 		frameType = (flags >> 4) & 0xf;
-		codecid = flags & 0xf;
-		PRT ("video\t");
-		PRT ("codecId: %d\t", codecid);
-		PRT ("frameType: %d\t", frameType);
-		if (codecid == 7)
-		{
+		codecId = flags & 0xf;
+		PRT("video\t");
+		PRT("codecId: %d\t", codecId);
+		PRT("frameType: %d\t", frameType);
+		if (codecId == 7) {
 			if_avc = 1;
 			unsigned char avcPacketType;
 
-			fread (&avcPacketType, 1, 1, fp);
-			PRT ("avcPacketType: %d\t", avcPacketType);
+			fread(&avcPacketType, 1, 1, fp);
+			PRT("avcPacketType: %d\t", avcPacketType);
 		}
-	}
-	else
-	{
-		PRT ("script\t");
+	} else {
+		PRT("script\t");
 	}
 
-	if (if_avc)
-	{
-		fseek (fp, flvTag->datasize - 2, SEEK_CUR);
+	if (if_avc) {
+		fseek(fp, flvTag->dataSize - 2, SEEK_CUR);
+	} else {
+		fseek(fp, flvTag->dataSize - 1, SEEK_CUR);
 	}
-	else
-	{
-		fseek (fp, flvTag->datasize - 1, SEEK_CUR);
-	}
-	fseek (fp, FLV_SIZE_PREVIOUSTAGSIZE, SEEK_CUR);
+	fseek(fp, FLV_SIZE_PREVIOUSTAGSIZE, SEEK_CUR);
 
-	PRT ("\n");
+	PRT("\n");
 	return OK;
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	unsigned char buf[FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE];
-	int fileSize;
-	FLVTag_t flvTag;
+    unsigned char buf[FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE];
+    int fileSize;
+    FLVTag_t flvTag;
 
-	FILE *fp = NULL;
+    FILE *fp = NULL;
 
-	fp = fopen (argv[1], "r");
-	PRT ("FileName: %s\n", argv[1]);
+    fp = fopen(argv[1], "r");
+    PRT("FileName: %s\n", argv[1]);
 
-	fseek (fp, 0, SEEK_END);
-	fileSize = ftell (fp);
-	PRT ("FileSize: %d\n", fileSize);
-	rewind (fp);
+    fseek(fp, 0, SEEK_END);
+    fileSize = ftell(fp);
+    PRT("FileSize: %d\n", fileSize);
+    rewind(fp);
 
-	fread (buf, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1, fp);
-	PRT ("FileHeader: %c%c%c\n", buf[0], buf[1], buf[2]);
-	PRT ("Version: %d\n", FLV_UI8 (&buf[3]));
-	PRT ("HeaderSize: %d\n", FLV_UI32 (&buf[5]));
-	PRT ("PreviousTagSize0: %d\n", FLV_UI32 (&buf[FLV_SIZE_HEADER]));
+    fread(buf, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1, fp);
+    PRT("FileHeader: %c%c%c\n", buf[0], buf[1], buf[2]);
+    PRT("Version: %d\n", FLV_UI8(&buf[3]));
+    PRT("HeaderSize: %d\n", FLV_UI32(&buf[5]));
+    PRT("PreviousTagSize0: %d\n", FLV_UI32(&buf[FLV_SIZE_HEADER]));
 
-	int tagID = 0;
+    int tagID = 0;
 
-	while (readFLVTag (&flvTag, &tagID, fp) == OK)
-	{
-	}
-	fclose (fp);
+    while (readFLVTag(&flvTag, &tagID, fp) == OK) {
+    }
+    fclose(fp);
 
-	PRT ("## \n");
-	PRT ("## \n");
-	PRT ("## TagType:\t8=>audio, 9=>video, 18=>script\n");
-	PRT ("## audioCodecId:\t0=>uncompressed, 1=>ADPCM, 10=>AAC, 11=>Speex, 14=>MP3_8kHz, 15=>Device-specific_sound, 2=>MP3, 3=>Linear_PCM_little_endian, 4=>Nellymoser_16kHz_mono, 5=>Nellymoser_8kHz_mono, 6=>Nellymoser, 7=>G.711_A-law, 8=>G.711_mu-law\n");
-	PRT ("## videoCodecId:\t1=>JPEG, 2=>Sorenson_H.263, 3=>Screen_video, 4=>On2_VP6, 5=>On2_VP6_alpha, 6=>Screen_video_v2, 7=>AVC\n");
-	PRT ("## sampleRate:\t0=>5518Hz, 1=>11025Hz, 2=>22050Hz, 3=>44100Hz\n");
-	PRT ("## sampleSize:\t0=>8bit, 1=>16bit\n");
-	PRT ("## frameType:\t1=>keyframe, 2=>interframe, 3=>disposable_interframe, 4=>generated_keyframe, 5=>video_info/command_frame\n");
-	PRT ("## avcPacketType:\t0=>avc_seq_header, 1=>avc_nalu, 2=>avc_seq_end\n");
-	PRT ("## \n");
+    PRT("## \n");
+    PRT("## \n");
+    PRT("## TagType:\t8=>audio, 9=>video, 18=>script\n");
+    PRT("## audioCodecId:\t0=>uncompressed, 1=>ADPCM, 10=>AAC, 11=>Speex, 14=>MP3_8kHz, 15=>Device-specific_sound, 2=>MP3, 3=>Linear_PCM_little_endian, 4=>Nellymoser_16kHz_mono, 5=>Nellymoser_8kHz_mono, 6=>Nellymoser, 7=>G.711_A-law, 8=>G.711_mu-law\n");
+    PRT("## videoCodecId:\t1=>JPEG, 2=>Sorenson_H.263, 3=>Screen_video, 4=>On2_VP6, 5=>On2_VP6_alpha, 6=>Screen_video_v2, 7=>AVC\n");
+    PRT("## sampleRate:\t0=>5518Hz, 1=>11025Hz, 2=>22050Hz, 3=>44100Hz\n");
+    PRT("## sampleSize:\t0=>8bit, 1=>16bit\n");
+    PRT("## frameType:\t1=>keyframe, 2=>interframe, 3=>disposable_interframe, 4=>generated_keyframe, 5=>video_info/command_frame\n");
+    PRT("## avcPacketType:\t0=>avc_seq_header, 1=>avc_nalu, 2=>avc_seq_end\n");
+    PRT("## \n");
 
-	return 0;
+    return 0;
 }
