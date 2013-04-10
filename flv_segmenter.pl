@@ -11,7 +11,6 @@ At 2013/4/7 Beijing
 =cut
 
 use strict;
-use warnings;
 
 my %tag_type = (
     8  => 'audio',
@@ -153,7 +152,7 @@ while ( sysread( FH, $buf, 8 ) ) {
             print OUT $aac_0_frame if $if_audio_eq_aac;
             print "generating $out_file\n";
         }
-        print OUT $tag_data if -t OUT;
+        print OUT $tag_data;
     }
 }
 
