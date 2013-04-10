@@ -1,12 +1,12 @@
 // 
-// flv.c
+// flv_segmenter.c
 // 
-// Dump Adobe flv file Info per frame.
+// Split Adobe flv file into segments at keyframes.
 // 
 // Author:Chen Gang
 // Blog: http://blog.yikuyiku.com
 // Corp:SINA
-// At 2013/4/11 Beijing
+// At 2013/4/10 Beijing
 // 
 
 #include <stdlib.h>
