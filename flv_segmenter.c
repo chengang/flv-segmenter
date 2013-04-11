@@ -140,6 +140,7 @@ int readFLVTag(FILE * fp)
                 fclose(out);
             }
             sprintf(outFileName, "%s_%d.flv", inFileName, outId);
+			PRT("generating %s\n", outFileName);
             out = fopen(outFileName, "w");
             fwrite(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1,
                    out);
@@ -169,7 +170,15 @@ int main(int argc, char *argv[])
     FILE *fp = NULL;
     strcpy(inFileName, argv[1]);
 
-    fp = fopen(argv[1], "r");
+    if (strcmp(inFileName, "-") == OK)
+    {
+        fp = stdin;
+		sprintf(inFileName, "tmp");
+    }
+    else
+    {
+        fp = fopen(inFileName, "r");
+    }
     fread(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1, fp);
 
     while (readFLVTag(fp) == OK)
