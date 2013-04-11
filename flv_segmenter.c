@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     if (strcmp(inFileName, "-") == OK)
     {
         fp = stdin;
-		sprintf(inFileName, "tmp");
+		sprintf(inFileName, "stdin");
     }
     else
     {
