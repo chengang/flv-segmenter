@@ -32,6 +32,7 @@
 
 #define FLV_UI24(x) (unsigned int)(((*(x)) << 16) + ((*(x + 1)) << 8) + (*(x + 2)))
 #define FLV_UI8(x) (unsigned int)(*(x))
+#define FLV_TIMESTAMP(x) (int)(((*(x + 3)) << 24) + ((*(x)) << 16) + ((*(x + 1)) << 8) + (*(x + 2)))
 
 int tagId = 0;
 int videoTagId = 0;
@@ -39,6 +40,8 @@ int audioTagId = 0;
 int if_avc = 0;
 int if_aac = 0;
 int outId = 0;
+int audioStartTimestamp = 0;
+int videoStartTimestamp = 0;
 char outFileName[50];
 char outFileNamePrefix[20] = "";
 FILE *out = NULL;
@@ -53,7 +56,7 @@ typedef struct
 {
     unsigned int tagType;
     int dataSize;
-    short keyframe;
+    int timeStamp;
 } FLVTag_t;
 
 int readFLVTag(FILE * fp)
@@ -74,6 +77,7 @@ int readFLVTag(FILE * fp)
 
     flvTag.tagType = FLV_UI8(tagHeader);
     flvTag.dataSize = FLV_UI24(&tagHeader[1]);
+    flvTag.timeStamp = FLV_TIMESTAMP(&tagHeader[4]);
 
     unsigned char data[flvTag.dataSize];
     int frameType, codecId;
@@ -133,31 +137,71 @@ int readFLVTag(FILE * fp)
 
     if (!if_avc || tagId > 3)
     {
-        if (flvTag.tagType == FLV_TAG_VIDEO && frameType == KEY_FRAME)
+        if (frameType == KEY_FRAME)
         {
-            outId++;
-            if (out != NULL)
+            if (flvTag.tagType == FLV_TAG_VIDEO)
             {
-                fclose(out);
-            }
-            sprintf(outFileName, "%s%05d.flv", outFileNamePrefix, outId);
-			PRT("generating %s\n", outFileName);
-            out = fopen(outFileName, "w");
-            fwrite(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1,
-                   out);
-            if (if_avc)
-            {
-                fwrite(avc_0_frame, avc_0_frame_size, 1, out);
-            }
-            if (if_aac)
-            {
-                fwrite(aac_0_frame, aac_0_frame_size, 1, out);
-            }
+                outId++;
+                if (out != NULL)
+                {
+                    fclose(out);
+                }
 
+                videoStartTimestamp = flvTag.timeStamp;
+                sprintf(outFileName, "%s%05d.flv", outFileNamePrefix, outId);
+                PRT("generating %s\n", outFileName);
+                out = fopen(outFileName, "w");
+                fwrite(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE,
+                       1, out);
+                if (if_avc)
+                {
+                    fwrite(avc_0_frame, avc_0_frame_size, 1, out);
+                }
+                if (if_aac)
+                {
+                    fwrite(aac_0_frame, aac_0_frame_size, 1, out);
+                }
+
+            }
+            else if (flvTag.tagType == FLV_TAG_AUDIO)
+            {
+                audioStartTimestamp = flvTag.timeStamp;
+            }
         }
+
         if (out != NULL)
         {
-            fwrite(tagHeader, FLV_SIZE_TAGHEADER, 1, out);
+            unsigned char write_bytes[FLV_SIZE_TAGHEADER];
+            write_bytes[0] = flvTag.tagType;
+
+            // DataSize
+            write_bytes[1] = ((flvTag.dataSize >> 16) & 0xff);
+            write_bytes[2] = ((flvTag.dataSize >> 8) & 0xff);
+            write_bytes[3] = ((flvTag.dataSize >> 0) & 0xff);
+
+            // Timestamp
+            int timeStamp = 0;
+            if (flvTag.tagType == FLV_TAG_VIDEO)
+            {
+                timeStamp = flvTag.timeStamp - videoStartTimestamp;
+            }
+            else if (flvTag.tagType == FLV_TAG_AUDIO)
+            {
+                timeStamp = flvTag.timeStamp - audioStartTimestamp;
+            }
+            write_bytes[4] = ((timeStamp >> 16) & 0xff);
+            write_bytes[5] = ((timeStamp >> 8) & 0xff);
+            write_bytes[6] = ((timeStamp >> 0) & 0xff);
+
+            // TimestampExtended
+            write_bytes[7] = ((timeStamp >> 24) & 0xff);
+
+            // StreamID
+            write_bytes[8] = 0;
+            write_bytes[9] = 0;
+            write_bytes[10] = 0;
+
+            fwrite(write_bytes, FLV_SIZE_TAGHEADER, 1, out);
             fwrite(data, flvTag.dataSize, 1, out);
             fwrite(preTagSize, FLV_SIZE_PREVIOUSTAGSIZE, 1, out);
         }
@@ -168,32 +212,33 @@ int readFLVTag(FILE * fp)
 
 int main(int argc, char *argv[])
 {
-	if(argc < 2 || strcmp(argv[1], "-h") == OK || strcmp(argv[1], "--help") == OK )
-	{
-		printf("usage: flv_segmenter flv_file [output_file_prefix]\n");
-		return OK;
-	}
+    if (argc < 2 || strcmp(argv[1], "-h") == OK
+        || strcmp(argv[1], "--help") == OK)
+    {
+        printf("usage: flv_segmenter flv_file [output_file_prefix]\n");
+        return OK;
+    }
     FILE *fp = NULL;
     strcpy(inFileName, argv[1]);
 
     if (strcmp(inFileName, "-") == OK)
     {
         fp = stdin;
-		sprintf(inFileName, "stdin");
+        sprintf(inFileName, "stdin");
     }
     else
     {
         fp = fopen(inFileName, "r");
     }
 
-	if(argc > 2)
-	{
-    	strcpy(outFileNamePrefix, argv[2]);
-	}
-	else
-	{
-    	strcpy(outFileNamePrefix, inFileName);
-	}
+    if (argc > 2)
+    {
+        strcpy(outFileNamePrefix, argv[2]);
+    }
+    else
+    {
+        strcpy(outFileNamePrefix, inFileName);
+    }
 
     fread(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1, fp);
 
