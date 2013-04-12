@@ -40,6 +40,7 @@ int if_avc = 0;
 int if_aac = 0;
 int outId = 0;
 char outFileName[50];
+char outFileNamePrefix[20] = "";
 FILE *out = NULL;
 char inFileName[50];
 int avc_0_frame_size;
@@ -139,7 +140,7 @@ int readFLVTag(FILE * fp)
             {
                 fclose(out);
             }
-            sprintf(outFileName, "%s_%d.flv", inFileName, outId);
+            sprintf(outFileName, "%s%05d.flv", outFileNamePrefix, outId);
 			PRT("generating %s\n", outFileName);
             out = fopen(outFileName, "w");
             fwrite(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1,
@@ -167,6 +168,11 @@ int readFLVTag(FILE * fp)
 
 int main(int argc, char *argv[])
 {
+	if(argc < 2 || strcmp(argv[1], "-h") == OK || strcmp(argv[1], "--help") == OK )
+	{
+		printf("usage: flv_segmenter flv_file [output_file_prefix]\n");
+		return OK;
+	}
     FILE *fp = NULL;
     strcpy(inFileName, argv[1]);
 
@@ -179,6 +185,16 @@ int main(int argc, char *argv[])
     {
         fp = fopen(inFileName, "r");
     }
+
+	if(argc > 2)
+	{
+    	strcpy(outFileNamePrefix, argv[2]);
+	}
+	else
+	{
+    	strcpy(outFileNamePrefix, inFileName);
+	}
+
     fread(FLVHeader, FLV_SIZE_HEADER + FLV_SIZE_PREVIOUSTAGSIZE, 1, fp);
 
     while (readFLVTag(fp) == OK)
