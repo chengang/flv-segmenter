@@ -74,10 +74,6 @@ int readFLVTag(FILE * fp)
     }
 
     tagId++;
-    if (tagId >= 86400)
-    {
-        tagId = 1;              // reset in (GOP size) days
-    }
 
     flvTag.tagType = FLV_UI8(tagHeader);
     flvTag.dataSize = FLV_UI24(&tagHeader[1]);
@@ -146,6 +142,10 @@ int readFLVTag(FILE * fp)
             if (flvTag.tagType == FLV_TAG_VIDEO)
             {
                 outId++;
+				if (outId >= 86400)
+				{
+					outId = 1;              // reset output file id in (GOP size) days
+				}
                 if (out != NULL)
                 {
                     fclose(out);
