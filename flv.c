@@ -40,13 +40,13 @@ typedef struct
     int tagSize;
 } FLVTag_t;
 
-int readFLVTag(FLVTag_t * flvTag, int *tagID, FILE * fp)
+int readFLVTag(FLVTag_t * flvTag, int *tagId, FILE * fp)
 {
     int rv;
     unsigned char buf[FLV_SIZE_TAGHEADER];
     unsigned char flags;
 
-    (*tagID)++;
+    ++*tagId;
     rv = fread(buf, FLV_SIZE_TAGHEADER, 1, fp);
     if (rv < 1)
     {
@@ -57,7 +57,7 @@ int readFLVTag(FLVTag_t * flvTag, int *tagID, FILE * fp)
     flvTag->timeStamp = FLV_TIMESTAMP(&buf[4]);
     flvTag->tagSize = FLV_SIZE_TAGHEADER + flvTag->dataSize;
 
-    PRT("TagID: %d\t", *tagID);
+    PRT("TagID: %d\t", *tagId);
     PRT("TagType: %d\t", flvTag->tagType);
     PRT("DataSize: %d\t", flvTag->dataSize);
     PRT("TimeStamp: %d\t", flvTag->timeStamp);
@@ -140,9 +140,9 @@ int main(int argc, char *argv[])
     PRT("HeaderSize: %d\n", FLV_UI32(&buf[5]));
     PRT("PreviousTagSize0: %d\n", FLV_UI32(&buf[FLV_SIZE_HEADER]));
 
-    int tagID = 0;
+    int tagId = 0;
 
-    while (readFLVTag(&flvTag, &tagID, fp) == OK)
+    while (readFLVTag(&flvTag, &tagId, fp) == OK)
     {
     }
     fclose(fp);

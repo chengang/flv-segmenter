@@ -74,6 +74,10 @@ int readFLVTag(FILE * fp)
     }
 
     tagId++;
+    if (tagId >= 86400)
+    {
+        tagId = 1;              // reset in (GOP size) days
+    }
 
     flvTag.tagType = FLV_UI8(tagHeader);
     flvTag.dataSize = FLV_UI24(&tagHeader[1]);
