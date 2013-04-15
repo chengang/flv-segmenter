@@ -34,12 +34,8 @@
 #define FLV_UI8(x) (unsigned int)(*(x))
 #define FLV_TIMESTAMP(x) (int)(((*(x + 3)) << 24) + ((*(x)) << 16) + ((*(x + 1)) << 8) + (*(x + 2)))
 
-int tagId = 0;
-int videoTagId = 0;
-int audioTagId = 0;
-int if_avc = 0;
-int if_aac = 0;
-int outId = 0;
+int tagId = 0,
+    videoTagId = 0, audioTagId = 0, if_avc = 0, if_aac = 0, outId = 0;
 int audioStartTimestamp = 0;
 int videoStartTimestamp = 0;
 char outFileName[50];
@@ -142,10 +138,10 @@ int readFLVTag(FILE * fp)
             if (flvTag.tagType == FLV_TAG_VIDEO)
             {
                 outId++;
-				if (outId >= 86400)
-				{
-					outId = 1;              // reset output file id in (GOP size) days
-				}
+                if (outId >= 86400)
+                {
+                    outId = 1;  // reset output file id in (GOP size) days
+                }
                 if (out != NULL)
                 {
                     fclose(out);
