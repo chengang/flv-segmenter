@@ -12,7 +12,6 @@ At 2013/4/7 Beijing
 
 use strict;
 use warnings;
-use feature 'say';
 use Term::ANSIColor::Print;
 
 my %tag_type = (
@@ -90,21 +89,21 @@ my $buf;
 my $print = Term::ANSIColor::Print->new();
 
 read( FH, $buf, 3 );
-say "File Header: " . $buf;
+print "File Header: " . $buf . "\n";
 
 read( FH, $buf, 1 );
-say "Version: " . unpack( "C", $buf );
+print "Version: " . unpack( "C", $buf ) . "\n";
 
 read( FH, $buf, 1 );    # jump Type Flags
 
 read( FH, $buf, 4 );
-say "Header Size: " . unpack( "N", $buf );
+print "Header Size: " . unpack( "N", $buf ) . "\n";
 
 read( FH, $buf, 4 );    # jump PreviousTagSize0
 
 my $tag_id = 0;
 
-say "ID\tType\tSize\tTimestamp\tFormat\tExt";
+print "ID\tType\tSize\tTimestamp\tFormat\tExt\n";
 while ( read( FH, $buf, 8 ) ) {
     $tag_id++;
 
