@@ -78,28 +78,34 @@ my %avc_packet_type = (
     2 => 'avc_seq_end',
 );
 
-open FH, "<", shift;
+my $input = shift;
+if ( $input eq '-' ) {
+    open FH, "<-";
+}
+else {
+    open FH, "<", $input;
+}
 binmode FH;
 my $buf;
 my $print = Term::ANSIColor::Print->new();
 
-sysread( FH, $buf, 3 );
+read( FH, $buf, 3 );
 say "File Header: " . $buf;
 
-sysread( FH, $buf, 1 );
+read( FH, $buf, 1 );
 say "Version: " . unpack( "C", $buf );
 
-sysread( FH, $buf, 1 );    # jump Type Flags
+read( FH, $buf, 1 );    # jump Type Flags
 
-sysread( FH, $buf, 4 );
+read( FH, $buf, 4 );
 say "Header Size: " . unpack( "N", $buf );
 
-sysread( FH, $buf, 4 );    # jump PreviousTagSize0
+read( FH, $buf, 4 );    # jump PreviousTagSize0
 
 my $tag_id = 0;
 
 say "ID\tType\tSize\tTimestamp\tFormat\tExt";
-while ( sysread( FH, $buf, 8 ) ) {
+while ( read( FH, $buf, 8 ) ) {
     $tag_id++;
 
     my ( $tag_type, $data_size, $ts, @datasize, @timestamp );
@@ -113,8 +119,8 @@ while ( sysread( FH, $buf, 8 ) ) {
       ( ( $timestamp[0] * 256 + $timestamp[1] ) * 256 + $timestamp[2] ) * 256 +
       $timestamp[3];
 
-    sysread( FH, $buf, 3 );            # jump SteamID, Always 0.
-    sysread( FH, $buf, $data_size );
+    read( FH, $buf, 3 );            # jump SteamID, Always 0.
+    read( FH, $buf, $data_size );
 
     $tag_type = $tag_type{$tag_type};
     my $info = $tag_id . "\t" . $tag_type . "\t" . $data_size . "\t" . $ts;
@@ -157,6 +163,6 @@ while ( sysread( FH, $buf, 8 ) ) {
         $print->green($info);
     }
 
-    sysread( FH, $buf, 4 );    # jump PreviousTagSize
+    read( FH, $buf, 4 );    # jump PreviousTagSize
 }
 
